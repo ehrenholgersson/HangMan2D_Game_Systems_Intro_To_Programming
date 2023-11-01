@@ -3,25 +3,69 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IO;   
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+//using Unity.Collections;
+//using UnityEditor.PackageManager;
+using System.Runtime.Serialization.Formatters.Binary;
+
+[System.Serializable]
+public struct SaveState
+{
+    char[] _remainingLetters;
+    int _hangmanCount;
+    char[] _triedLetters;
+    char[] _letters;
+
+    public List<char> RemainingLetters { get => _remainingLetters.ToList(); }
+
+    public List<char> TriedLetters { get => _triedLetters.ToList(); }
+    public int HangmanCount { get => _hangmanCount; }
+    public char[] Letters { get => _letters; }
+
+
+    public SaveState(List<char> remainingLetters,List<char> triedLetters, int hangmanCount, char[] letters)
+    {
+        _remainingLetters = remainingLetters.ToArray();
+        _hangmanCount = hangmanCount;
+        _triedLetters = triedLetters.ToArray();
+        _letters = letters;
+    }
+}
 
 public class Hangman : MonoBehaviour
 {
-    [SerializeField] List<string> _availableWords = new List<string>();
-    [SerializeField] TextMeshProUGUI _textField;
+    [Header("Game Values")]
+
     [SerializeField] GameObject _hangman;
     [SerializeField] GameObject _rope;
-    //[SerializeField] Vector3 _picnicPosition;
+    [SerializeField] Vector3 _startPosition;
     [SerializeField] Vector3 _hangPosition;
     [SerializeField] float _moveTime;
-    [SerializeField] GameObject[] _menus; 
 
-    public enum Menus {Main,Options,Game, Pause }
+    [SerializeField] List<string> _availableWords = new List<string>();
 
-    public Menus uImode;
+    [Header("UI/Menus")]
+
+    [SerializeField] GameObject[] _menus;
+    [SerializeField] TextMeshProUGUI _wordText;
+    [SerializeField] TextMeshProUGUI _resolutionText;
+    [SerializeField] TextMeshProUGUI _fullScreenText;
+    [SerializeField] Button _continueButton;
+    [SerializeField] GameObject _letterButtons;
+
+    [Header("Settings")]
+
+    [SerializeField] Vector2[] _availableResolutions;
+    string _savePath;
+
+     enum Menus {Main,Options,Game, Pause }
+
+     Menus _uImode;
 
     HingeJoint2D _head;
     Rigidbody2D _connectionPoint;
@@ -29,9 +73,12 @@ public class Hangman : MonoBehaviour
 
     GameObject[] _bodyParts = new GameObject[6];
     char[] _letters;
+    List<char> _triedLetters = new List<char>();
     List <char> _remainingLetters = new List<char>();
     int _hangmanCount = 0;
     char[] _allowedinputs = new char[] { 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z' };
+
+
 
     private void Start()
     {
@@ -41,13 +88,21 @@ public class Hangman : MonoBehaviour
 
         Application.targetFrameRate = 60;
 
-        _letters = _availableWords[UnityEngine.Random.Range(0,_availableWords.Count)].ToArray();
-        _remainingLetters = _letters.ToList();
-        UpdateText();
+        _savePath = Application.persistentDataPath;
+
+        SetResolution();
+
+        //NewGame(); // remove when menu is done
+
+        //_letters = _availableWords[UnityEngine.Random.Range(0,_availableWords.Count)].ToArray();
+        //_remainingLetters = _letters.ToList();
+        //UpdateText();
+
+        _hangman.transform.position = _startPosition;
 
         _head = _hangman.transform.Find("Head").GetComponent<HingeJoint2D>();
         if (_head != null)
-            _connectionPoint = _head.connectedBody;
+            _connectionPoint = _head.connectedBody; 
 
         _rope.SetActive(false);
         foreach (Rigidbody2D rb in _hangman.GetComponentsInChildren<Rigidbody2D>(true))
@@ -58,27 +113,30 @@ public class Hangman : MonoBehaviour
         foreach (Transform t in _hangman.GetComponentsInChildren<Transform>(true))
         {
             //Debug.Log("found Image" + i);
-            if (i < _bodyParts.Length &&t.gameObject!= _hangman && t.parent.gameObject == _hangman)
+            if (i < _bodyParts.Length && t.gameObject != _hangman && t.parent.gameObject == _hangman)
             {
                 _bodyParts[i] = t.gameObject;
                 t.gameObject.SetActive(false);
                 i++;
             }
         }
-
-
+        ChangeUI(Menus.Main);
     }
 
-    public void ChangeUI(Menus newMode)
+    void SetResolution()
     {
-        uImode = newMode;
-        for (int i = 0; i < Enum.GetNames(typeof(Menus)).Length && i < _menus.Length;i++)
-        {
-            if (i == (int)newMode)
-                _menus[i].SetActive(true);
-            else
-                _menus[i].SetActive(false);
-        }
+        bool fullScreen;
+        if (PlayerPrefs.GetInt("FullScreen", 2) > 0)
+            fullScreen = true;
+        else
+            fullScreen = false;
+
+        Screen.SetResolution(PlayerPrefs.GetInt("ResolutionX", 1920), PlayerPrefs.GetInt("ResolutionY", 1080), fullScreen);
+    }
+
+    public void Quit()
+    {
+        Application.Quit();
     }
 
     public async void Hang()
@@ -97,18 +155,30 @@ public class Hangman : MonoBehaviour
         {
             rb.constraints = RigidbodyConstraints2D.None;
         }
+        StartCoroutine("EndGame");
     }
 
     private void Update()
     {
-        foreach (KeyCode vKey in System.Enum.GetValues(typeof(KeyCode)))
+        foreach (KeyCode vKey in Enum.GetValues(typeof(KeyCode)))
         {
             char keyName = vKey.ToString().ToCharArray()[0];
             //Debug.Log("Checking " + keyName);
             if (Input.GetKeyDown(vKey) && _allowedinputs.Contains(keyName)&& vKey.ToString().Length<2)
             {
-                TryLetter(keyName);
+                //TryLetter(keyName);
+                //UpdateButtons();
+                //Debug.Log("pressing " + keyName + "button");
+                PressButton(keyName);
             }
+        }
+        if (Input.GetKeyDown(KeyCode.Escape)&& _uImode == Menus.Game)
+        {
+            ChangeUI(Menus.Pause);
+        }
+        if (_uImode == Menus.Options)
+        {
+            UpdateOptions();
         }
     }
 
@@ -120,6 +190,7 @@ public class Hangman : MonoBehaviour
         Debug.Log("pressed " + letter);
         if (_remainingLetters.Contains(letter))
         {
+            _triedLetters.Add(letter);
             while (_remainingLetters.Contains(letter)) // -- in case of multiple instances of same letter
             {
                 _remainingLetters.Remove(letter);
@@ -130,8 +201,9 @@ public class Hangman : MonoBehaviour
                 Win();
             return true;
         }
-        else if (!_letters.Contains(letter))
+        else if (!_letters.Contains(letter)&&!_triedLetters.Contains(letter))
         {
+            _triedLetters.Add(letter);
             _hangmanCount++;
             UpdateText();
             UpdateBody();
@@ -141,12 +213,60 @@ public class Hangman : MonoBehaviour
         }
         UpdateText();
         UpdateBody();
-        return true; // --> already tried correct letter
+        return _letters.Contains(letter); // --> already tried letter
+    }
+    
+    void SaveGame()
+    {
+        if (File.Exists(_savePath+"Hangman.save"))
+        {
+            File.Delete(_savePath + "Hangman.save");
+        }
+        FileStream stream = new FileStream(_savePath + "Hangman.save", FileMode.Create);
+        BinaryFormatter converter = new BinaryFormatter();
+        converter.Serialize(stream, new SaveState(_remainingLetters,_triedLetters, _hangmanCount,_letters));
+        stream.Close();
+        Debug.Log("saved to " + _savePath + "Hangman.save");
+    }
+    bool LoadGame()
+    {
+        
+        if (File.Exists(_savePath + "Hangman.save"))
+        {
+            SaveState Load = new SaveState();
+            FileStream stream = new FileStream(_savePath + "Hangman.save", FileMode.Open);
+            BinaryFormatter converter = new BinaryFormatter();
+            Load = (SaveState)converter.Deserialize(stream);
+            stream.Close();
+            _remainingLetters = Load.RemainingLetters;
+            _hangmanCount = Load.HangmanCount;
+            _letters = Load.Letters;
+            _triedLetters = Load.TriedLetters;
+            Debug.Log("Loaded "+ _savePath + "Hangman.save");
+            return true;
+        }
+        Debug.Log("Failed to load save");
+        return false;
+    }
+
+
+    IEnumerator EndGame()
+    {
+
+        yield return new WaitForSeconds(5);
+
+        if (File.Exists(_savePath + "Hangman.save"))
+        {
+            File.Delete(_savePath + "Hangman.save");
+        }
+
+        SceneManager.LoadScene(0);
     }
 
     void Win()
     {
         UIText.DisplayText("You Win!");
+        StartCoroutine("EndGame");
     }
 
     private string UpdateText()
@@ -166,7 +286,7 @@ public class Hangman : MonoBehaviour
             output += " ";
         }
         //Debug.Log(output);
-        _textField.text = output;
+        _wordText.text = output;
         return output;
     }
     private void UpdateBody()
@@ -177,4 +297,196 @@ public class Hangman : MonoBehaviour
                 _bodyParts[i].SetActive(true);
         }
     }
+
+    void UpdateButtons() // press any button that corresponds with a letter we have already tried (will trigger the button to disable and switch color but game should ignore any letters we have already tried)
+    {
+        foreach(Button button in _letterButtons.GetComponentsInChildren<Button>())
+        {
+            Debug.Log("Checking Button: "+button);
+            TextMeshProUGUI txt = button.GetComponentInChildren<TextMeshProUGUI>();
+            if (txt != null)
+            {
+                if (_triedLetters.Contains(txt.text.ToCharArray()[0]))
+                {
+                    button.gameObject.GetComponent<LetterButton>().ButtonPressed();
+                }
+            }
+        }
+    }
+    void PressButton(char letter) // press a specific button
+    {
+        foreach (Button button in _letterButtons.GetComponentsInChildren<Button>())
+        {
+            Debug.Log("Checking Button: " + button);
+            TextMeshProUGUI txt = button.GetComponentInChildren<TextMeshProUGUI>();
+            if (txt!=null)
+            {
+                if (letter == txt.text.ToCharArray()[0])
+                {
+                    Debug.Log("Found Button");
+                    button.gameObject.GetComponent<LetterButton>().ButtonPressed();
+                    return;
+                }
+                else
+                    Debug.Log(letter + " does not match "+ txt.text.ToCharArray()[0]);
+            }
+        }
+    }
+
+    #region MenuStuff
+    void ChangeUI(Menus newMode)
+    {
+        if (_uImode == Menus.Pause) // save game if leaving pause menu
+        {
+            SaveGame();
+        }
+        if (_uImode == Menus.Options) // save prefs if leaving options menu
+        {
+            PlayerPrefs.Save();
+        }
+        _uImode = newMode;
+        for (int i = 0; i < Enum.GetNames(typeof(Menus)).Length && i < _menus.Length; i++)
+        {
+            if (i == (int)newMode)
+                _menus[i].SetActive(true);
+            else
+                _menus[i].SetActive(false);
+        }
+        if (newMode == Menus.Main) // if entering main menu enable/disable continue button depending on existance of save 
+        {
+            if (File.Exists(_savePath + "Hangman.save"))
+                _continueButton.gameObject.SetActive(true);
+            else
+                _continueButton.gameObject.SetActive(false);
+            ReSetHangMan();
+        }
+    }
+
+    public void ChangeUI(String modeString)
+    {
+        Menus newMode = new Menus();
+        if (!Enum.TryParse<Menus>(modeString, true, out newMode))
+            return;
+
+        ChangeUI(newMode);
+    }
+
+    public void ReSetHangMan()
+    {
+        _hangman.transform.position = _startPosition;
+
+        _rope.SetActive(false);
+        foreach (Rigidbody2D rb in _hangman.GetComponentsInChildren<Rigidbody2D>(true))
+        {
+            rb.constraints = RigidbodyConstraints2D.FreezeAll;
+        }
+        int i = 0;
+        foreach (Transform t in _hangman.GetComponentsInChildren<Transform>(true))
+        {
+            //Debug.Log("found Image" + i);
+            if (i < _bodyParts.Length && t.gameObject != _hangman && t.parent.gameObject == _hangman)
+            {
+                _bodyParts[i] = t.gameObject;
+                t.gameObject.SetActive(false);
+                i++;
+            }
+        }
+    }
+
+    public void NewGame()
+    {
+        _letters = _availableWords[UnityEngine.Random.Range(0, _availableWords.Count)].ToArray();
+        _remainingLetters = _letters.ToList();
+        UpdateText();
+        ReSetHangMan();
+        //_hangman.transform.position = _startPosition;
+
+        //_rope.SetActive(false);
+        //foreach (Rigidbody2D rb in _hangman.GetComponentsInChildren<Rigidbody2D>(true))
+        //{
+        //    rb.constraints = RigidbodyConstraints2D.FreezeAll;
+        //}
+        //int i = 0;
+        //foreach (Transform t in _hangman.GetComponentsInChildren<Transform>(true))
+        //{
+        //    //Debug.Log("found Image" + i);
+        //    if (i < _bodyParts.Length && t.gameObject != _hangman && t.parent.gameObject == _hangman)
+        //    {
+        //        _bodyParts[i] = t.gameObject;
+        //        t.gameObject.SetActive(false);
+        //        i++;
+        //    }
+        //}
+        ChangeUI(Menus.Game);
+    }
+
+    public void ContinueGame()
+    {
+        NewGame();
+        LoadGame(); // ovveride new game status with previously saved one
+        UpdateText();
+        UpdateBody();
+        UpdateButtons();
+    }
+    void UpdateOptions()
+    {
+        if ( _availableResolutions.Contains(new Vector2 (PlayerPrefs.GetInt("ResolutionX",0), PlayerPrefs.GetInt("ResolutionY", 0))))
+        {
+            _resolutionText.text = "" + PlayerPrefs.GetInt("ResolutionX", 1920) + " X " + PlayerPrefs.GetInt("ResolutionY", 1080);
+        }
+        else
+        {
+            PlayerPrefs.SetInt("ResolutionX", (int)_availableResolutions[0].x);
+            PlayerPrefs.SetInt("ResolutionX", (int)_availableResolutions[0].y);
+            _resolutionText.text = "" + PlayerPrefs.GetInt("ResolutionX", 1920) + " X " + PlayerPrefs.GetInt("ResolutionY", 1080);
+            SetResolution();
+        }
+        if (PlayerPrefs.GetInt("FullScreen",2)<2)
+        {
+            if (PlayerPrefs.GetInt("FullScreen", 2) < 1)
+                _fullScreenText.text = "Windowed";
+            else
+                _fullScreenText.text = "FullScreen";
+
+        }
+        else
+        {
+            PlayerPrefs.SetInt("FullScreen", 1);
+            SetResolution();
+            // change button text
+        }
+    }
+
+    public void NextResolution()
+    {
+        Vector2 currentResolution = new Vector2(PlayerPrefs.GetInt("ResolutionX", 0), PlayerPrefs.GetInt("ResolutionY", 0));
+        if (_availableResolutions.Contains(currentResolution))
+        {
+            currentResolution = _availableResolutions[(Array.IndexOf(_availableResolutions,currentResolution)+1)%_availableResolutions.Length];
+        }
+        else
+        {
+            currentResolution = _availableResolutions[0];
+        }
+
+        PlayerPrefs.SetInt("ResolutionX", (int)currentResolution.x);
+        PlayerPrefs.SetInt("ResolutionY", (int)currentResolution.y);
+        _resolutionText.text = "" + PlayerPrefs.GetInt("ResolutionX", 1920) + " X " + PlayerPrefs.GetInt("ResolutionY", 1080);
+        SetResolution();
+    }
+    public void ToggleFullScreen()
+    {
+        if (PlayerPrefs.GetInt("FullScreen", 2) < 1)
+        {
+            PlayerPrefs.SetInt("FullScreen", 1);
+            _fullScreenText.text = "FullScreen";
+        }
+        else
+        {
+            PlayerPrefs.SetInt("FullScreen", 0);
+            _fullScreenText.text = "Windowed";
+        }
+        SetResolution();
+    }
+    #endregion
 }
