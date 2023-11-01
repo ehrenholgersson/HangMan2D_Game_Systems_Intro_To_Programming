@@ -238,6 +238,11 @@ public class Hangman : MonoBehaviour
             BinaryFormatter converter = new BinaryFormatter();
             Load = (SaveState)converter.Deserialize(stream);
             stream.Close();
+            if (Load.HangmanCount >= _bodyParts.Length||Load.RemainingLetters.Count<1) // if game was quit between win/loose condition and return to menu then the save is not valid
+            {
+                File.Delete(_savePath + "Hangman.save");
+                SceneManager.LoadScene(0);
+            }
             _remainingLetters = Load.RemainingLetters;
             _hangmanCount = Load.HangmanCount;
             _letters = Load.Letters;
@@ -247,6 +252,12 @@ public class Hangman : MonoBehaviour
         }
         Debug.Log("Failed to load save");
         return false;
+    }
+
+    public void QuitToMenu()
+    {
+        SaveGame();
+        SceneManager.LoadScene(0);
     }
 
 

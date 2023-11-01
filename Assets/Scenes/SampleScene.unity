@@ -12164,8 +12164,8 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 26953139}
         m_TargetAssemblyTypeName: Hangman, Assembly-CSharp
-        m_MethodName: ChangeUI
-        m_Mode: 5
+        m_MethodName: QuitToMenu
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
