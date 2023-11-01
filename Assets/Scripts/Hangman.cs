@@ -222,7 +222,11 @@ public class Hangman : MonoBehaviour
         {
             File.Delete(_savePath + "Hangman.save");
         }
-        FileStream stream = new FileStream(_savePath + "Hangman.save", FileMode.Create);
+        if (_hangmanCount >= _bodyParts.Length || _remainingLetters.Count < 1)
+        {
+            return;
+        }
+                FileStream stream = new FileStream(_savePath + "Hangman.save", FileMode.Create);
         BinaryFormatter converter = new BinaryFormatter();
         converter.Serialize(stream, new SaveState(_remainingLetters,_triedLetters, _hangmanCount,_letters));
         stream.Close();
