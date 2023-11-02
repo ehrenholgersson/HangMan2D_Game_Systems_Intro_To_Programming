@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Hangman">
+    <Position X="6" Y="0.5" Width="3.25" />
+    <Compartments>
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
+    <NestedTypes>
+      <Enum Name="Hangman.Menus" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Assets\Scripts\Hangman.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AASTAAgAEHo0AAgASEAAMABARACAAABZgIAAESARCQE=</HashCode>
+      <FileName>Assets\Scripts\Hangman.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="LetterButton">
+    <Position X="3" Y="0.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AABAAAAAAAAAAAAAAAAAAAAAAIAAAAQAAAAgAAAACEA=</HashCode>
+      <FileName>Assets\Scripts\LetterButton.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UIText">
+    <Position X="1" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQBAAAAACgAAAAEAAAAAAAAAAAAAAAIAAACAAAAAAA=</HashCode>
+      <FileName>Assets\Scripts\UIText.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="SaveState">
+    <Position X="1" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAgAAEAAAgAAAAMIAAAAAAAAAQAAAAACAAAAA=</HashCode>
+      <FileName>Assets\Scripts\Hangman.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

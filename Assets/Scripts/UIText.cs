@@ -7,20 +7,20 @@ using UnityEngine.UI;
 public class UIText : MonoBehaviour
 {
     float _alpha;
-    TextMeshProUGUI text;
-    static UIText main;
+    TextMeshProUGUI _text;
+    static UIText _main;
 
     private void Start()
     {
         
-        if (main == null)
+        if (_main == null)
         {
-            main = this;
-            text = GetComponent<TextMeshProUGUI>();
+            _main = this;
+            _text = GetComponent<TextMeshProUGUI>();
         }
         else Destroy(this);
         _alpha = 0;
-        text.color = new Color(text.color.r, text.color.g, text.color.b, 0);
+        _text.color = new Color(_text.color.r, _text.color.g, _text.color.b, 0);
     }
     // Update is called once per frame
     void Update()
@@ -28,19 +28,19 @@ public class UIText : MonoBehaviour
         if (_alpha > 0)
         {
             _alpha -= 0.2f * Time.deltaTime;
-            text.color = new Color(text.color.r, text.color.g, text.color.b, _alpha);
+            _text.color = new Color(_text.color.r, _text.color.g, _text.color.b, _alpha);
         }
     }
 
     void UpdateText(string newText)
     {
-        text.text = newText;
+        _text.text = newText;
         _alpha = 1;
-        text.color = new Color(text.color.r, text.color.g, text.color.b, _alpha);
+        _text.color = new Color(_text.color.r, _text.color.g, _text.color.b, _alpha);
     }
 
     public static void DisplayText(string newText)
     {
-        main.UpdateText(newText);
+        _main.UpdateText(newText);
     }
 }

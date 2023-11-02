@@ -8,8 +8,8 @@ public class LetterButton : MonoBehaviour
 {
     TextMeshProUGUI _textMesh;
     Button _button;
-    [SerializeField] Color CorrectColor;
-    [SerializeField] Color WrongColor;
+    [SerializeField] Color _correctColor;
+    [SerializeField] Color _wrongColor;
     // Start is called before the first frame update
     void OnEnable()
     {
@@ -23,11 +23,11 @@ public class LetterButton : MonoBehaviour
         ColorBlock c = _button.colors;
         if (Hangman.GameController.TryLetter(_textMesh.text.ToCharArray()[0]))
         {
-            c.disabledColor = CorrectColor;
+            c.disabledColor = _correctColor;
         }
         else
         {
-            c.disabledColor = WrongColor;
+            c.disabledColor = _wrongColor;
         }
         _button.colors = c;
         _button.interactable = false;

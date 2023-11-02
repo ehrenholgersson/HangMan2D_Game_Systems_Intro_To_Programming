@@ -9,8 +9,6 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-//using Unity.Collections;
-//using UnityEditor.PackageManager;
 using System.Runtime.Serialization.Formatters.Binary;
 
 [System.Serializable]
@@ -65,7 +63,7 @@ public class Hangman : MonoBehaviour
 
      enum Menus {Main,Options,Game, Pause }
 
-     Menus _uImode;
+     Menus _uiMode;
 
     HingeJoint2D _head;
     Rigidbody2D _connectionPoint;
@@ -88,15 +86,9 @@ public class Hangman : MonoBehaviour
 
         Application.targetFrameRate = 60;
 
-        _savePath = Application.persistentDataPath;
+        _savePath = Application.persistentDataPath +"/";
 
         SetResolution();
-
-        //NewGame(); // remove when menu is done
-
-        //_letters = _availableWords[UnityEngine.Random.Range(0,_availableWords.Count)].ToArray();
-        //_remainingLetters = _letters.ToList();
-        //UpdateText();
 
         _hangman.transform.position = _startPosition;
 
@@ -166,17 +158,14 @@ public class Hangman : MonoBehaviour
             //Debug.Log("Checking " + keyName);
             if (Input.GetKeyDown(vKey) && _allowedinputs.Contains(keyName)&& vKey.ToString().Length<2)
             {
-                //TryLetter(keyName);
-                //UpdateButtons();
-                //Debug.Log("pressing " + keyName + "button");
                 PressButton(keyName);
             }
         }
-        if (Input.GetKeyDown(KeyCode.Escape)&& _uImode == Menus.Game)
+        if (Input.GetKeyDown(KeyCode.Escape)&& _uiMode == Menus.Game)
         {
             ChangeUI(Menus.Pause);
         }
-        if (_uImode == Menus.Options)
+        if (_uiMode == Menus.Options)
         {
             UpdateOptions();
         }
@@ -226,7 +215,8 @@ public class Hangman : MonoBehaviour
         {
             return;
         }
-                FileStream stream = new FileStream(_savePath + "Hangman.save", FileMode.Create);
+
+        FileStream stream = new FileStream(_savePath + "Hangman.save", FileMode.Create);
         BinaryFormatter converter = new BinaryFormatter();
         converter.Serialize(stream, new SaveState(_remainingLetters,_triedLetters, _hangmanCount,_letters));
         stream.Close();
@@ -351,15 +341,15 @@ public class Hangman : MonoBehaviour
     #region MenuStuff
     void ChangeUI(Menus newMode)
     {
-        if (_uImode == Menus.Pause) // save game if leaving pause menu
+        if (_uiMode == Menus.Pause) // save game if leaving pause menu
         {
             SaveGame();
         }
-        if (_uImode == Menus.Options) // save prefs if leaving options menu
+        if (_uiMode == Menus.Options) // save prefs if leaving options menu
         {
             PlayerPrefs.Save();
         }
-        _uImode = newMode;
+        _uiMode = newMode;
         for (int i = 0; i < Enum.GetNames(typeof(Menus)).Length && i < _menus.Length; i++)
         {
             if (i == (int)newMode)
@@ -414,34 +404,18 @@ public class Hangman : MonoBehaviour
         _remainingLetters = _letters.ToList();
         UpdateText();
         ReSetHangMan();
-        //_hangman.transform.position = _startPosition;
-
-        //_rope.SetActive(false);
-        //foreach (Rigidbody2D rb in _hangman.GetComponentsInChildren<Rigidbody2D>(true))
-        //{
-        //    rb.constraints = RigidbodyConstraints2D.FreezeAll;
-        //}
-        //int i = 0;
-        //foreach (Transform t in _hangman.GetComponentsInChildren<Transform>(true))
-        //{
-        //    //Debug.Log("found Image" + i);
-        //    if (i < _bodyParts.Length && t.gameObject != _hangman && t.parent.gameObject == _hangman)
-        //    {
-        //        _bodyParts[i] = t.gameObject;
-        //        t.gameObject.SetActive(false);
-        //        i++;
-        //    }
-        //}
         ChangeUI(Menus.Game);
     }
 
     public void ContinueGame()
     {
-        NewGame();
-        LoadGame(); // ovveride new game status with previously saved one
-        UpdateText();
-        UpdateBody();
-        UpdateButtons();
+        //NewGame();
+        ReSetHangMan();
+        ChangeUI(Menus.Game);
+        LoadGame(); 
+        UpdateText();// update  
+        UpdateBody();// all the
+        UpdateButtons();// things
     }
     void UpdateOptions()
     {
@@ -468,7 +442,6 @@ public class Hangman : MonoBehaviour
         {
             PlayerPrefs.SetInt("FullScreen", 1);
             SetResolution();
-            // change button text
         }
     }
 
