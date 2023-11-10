@@ -40,6 +40,8 @@ public class Hangman : MonoBehaviour
     [Header("Game Values")]
 
     [SerializeField] GameObject _hangman;
+    [SerializeField] GameObject _hanglady;
+    [SerializeField] GameObject _wine;
     [SerializeField] GameObject _rope;
     [SerializeField] Vector3 _startPosition;
     [SerializeField] Vector3 _hangPosition;
@@ -128,6 +130,11 @@ public class Hangman : MonoBehaviour
 
     public void Quit()
     {
+        if (_uiMode == Menus.Pause)
+        {
+            SaveGame();
+        }
+
         Application.Quit();
     }
 
@@ -136,6 +143,9 @@ public class Hangman : MonoBehaviour
         Vector3 _picnicPosition = _hangman.transform.position;
         float timer = Time.time;
         UIText.DisplayText("Oh No!");
+        _wine.transform.parent = _hangman.transform;
+        _wine.transform.rotation = Quaternion.identity;
+        _wine.transform.localPosition = new Vector3(0.888880551f, -0.440991908f, 0);
         while (Time.time < timer + _moveTime)
         {
             _hangman.transform.position = Vector3.Lerp(_picnicPosition, _hangPosition, (Time.time - timer) / _moveTime);
@@ -232,7 +242,7 @@ public class Hangman : MonoBehaviour
             BinaryFormatter converter = new BinaryFormatter();
             Load = (SaveState)converter.Deserialize(stream);
             stream.Close();
-            if (Load.HangmanCount >= _bodyParts.Length||Load.RemainingLetters.Count<1) // if game was quit between win/loose condition and return to menu then the save is not valid
+            if (Load.HangmanCount >= _bodyParts.Length || Load.RemainingLetters.Count < 1) // if game was quit between win/loose condition and return to menu then the save is not valid
             {
                 File.Delete(_savePath + "Hangman.save");
                 SceneManager.LoadScene(0);
@@ -258,7 +268,7 @@ public class Hangman : MonoBehaviour
     IEnumerator EndGame()
     {
 
-        yield return new WaitForSeconds(5);
+        yield return new WaitForSeconds(6);
 
         if (File.Exists(_savePath + "Hangman.save"))
         {
@@ -270,6 +280,11 @@ public class Hangman : MonoBehaviour
 
     void Win()
     {
+        _hanglady.SetActive(true);
+        foreach (GameObject gO in _bodyParts)
+        {
+            gO.SetActive(true);
+        }
         UIText.DisplayText("You Win!");
         StartCoroutine("EndGame");
     }
@@ -379,6 +394,10 @@ public class Hangman : MonoBehaviour
     public void ReSetHangMan()
     {
         _hangman.transform.position = _startPosition;
+        _hanglady.SetActive(false);
+        _wine.transform.parent = null;
+        _wine.transform.position = new Vector3(861.34f, 21.774f, 151.949f);
+        _wine.transform.localRotation = Quaternion.Euler(0, 0, 343.93f);
 
         _rope.SetActive(false);
         foreach (Rigidbody2D rb in _hangman.GetComponentsInChildren<Rigidbody2D>(true))
