@@ -10,7 +10,7 @@ public class LetterButton : MonoBehaviour
     Button _button;
     [SerializeField] Color _correctColor;
     [SerializeField] Color _wrongColor;
-    // Start is called before the first frame update
+
     void OnEnable()
     {
         _textMesh = GetComponentInChildren<TextMeshProUGUI>();

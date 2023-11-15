@@ -318,7 +318,7 @@ public class Hangman : MonoBehaviour
         }
     }
 
-    void UpdateButtons() // press any button that corresponds with a letter we have already tried (will trigger the button to disable and switch color but game should ignore any letters we have already tried)
+    void UpdateButtons() // press any button that corresponds with a letter we have already tried (will trigger the button to disable and switch color but game should not punish we have already tried)
     {
         foreach(Button button in _letterButtons.GetComponentsInChildren<Button>())
         {
